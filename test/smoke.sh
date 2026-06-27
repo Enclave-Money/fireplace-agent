@@ -46,7 +46,7 @@
 set -euo pipefail
 
 # --- Authoritative constants (must match the build contract) ----------------
-readonly EXPECT_VERSION="0.1.0"
+readonly EXPECT_VERSION="0.1.1"
 readonly EXPECT_ENGINE_VERSION="v2026.6.19"
 readonly EXPECT_MCP_URL="https://data.fireplace.gg/mcp"
 readonly EXPECT_MODEL_DEFAULT="anthropic/claude-sonnet-4.5"

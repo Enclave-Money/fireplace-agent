@@ -36,7 +36,7 @@ FIREPLACE_ROOT="${FIREPLACE_ROOT:-$HOME/.fireplace}"
 FIREPLACE_REPO="${FIREPLACE_REPO:-https://github.com/Enclave-Money/fireplace-agent}"
 # Git ref of THIS repo to fetch in the curl|bash path. Defaults to the bundle
 # release tag, then falls back to the default branch if that tag is absent.
-FIREPLACE_REF="${FIREPLACE_REF:-v0.1.0}"
+FIREPLACE_REF="${FIREPLACE_REF:-v0.1.1}"
 PIP_TIMEOUT="${PIP_TIMEOUT:-600}"   # seconds; the engine[all] is a large install
 # Runtime: 'auto' (default) prefers Docker for a sandboxed agent and falls back
 # to a native venv when Docker is unavailable. Force with 'docker' or 'native'.
@@ -102,13 +102,14 @@ trap cleanup EXIT
 # TUI banner and defaults read "Fireplace", not the upstream name. Best-effort —
 # it must never fail the install. (The Docker image does the same at build time.)
 brand_patch_venv() {
-  local pkg
-  pkg="$("$VENV/bin/python" -c 'import hermes_cli,os;print(os.path.dirname(hermes_cli.__file__))' 2>/dev/null)" || return 0
-  [ -n "$pkg" ] && [ -d "$pkg" ] || return 0
+  local site script
+  site="$("$VENV/bin/python" -c 'import hermes_cli,os;print(os.path.dirname(os.path.dirname(hermes_cli.__file__)))' 2>/dev/null)" || return 0
+  [ -n "$site" ] && [ -d "$site" ] || return 0
+  script="$SRC/bundle/docker/brand-patch.py"
+  [ -f "$script" ] || script="$BUNDLE_DST/docker/brand-patch.py"
+  [ -f "$script" ] || return 0
   info "Applying Fireplace branding to the engine…"
-  find "$pkg" -name '*.py' -type f -print0 2>/dev/null \
-    | xargs -0 sed -i.fpbak -e 's/Hermes Agent/Fireplace Agent/g' -e 's/Nous Research/Fireplace/g' 2>/dev/null || true
-  find "$pkg" -name '*.py.fpbak' -type f -delete 2>/dev/null || true
+  "$VENV/bin/python" "$script" "$site" >&2 || true
 }
 
 # track_install — keyless, anonymous install telemetry. Pings OUR OWN endpoint

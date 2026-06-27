@@ -39,11 +39,11 @@ RUN uv venv /opt/hermes --python 3.11 \
  && /opt/hermes/bin/hermes --version
 
 # Rebrand the engine's user-visible display strings in this installed copy so the
-# in-agent TUI banner / defaults read "Fireplace" (a string rebrand of our own
+# TUI banner, tips, and notices read "Fireplace" (a string rebrand of our own
 # image, not a source fork). Best-effort; never fails the build.
-RUN PKG="$(/opt/hermes/bin/python -c 'import hermes_cli,os;print(os.path.dirname(hermes_cli.__file__))')" \
- && find "$PKG" -name '*.py' -type f -print0 \
-      | xargs -0 sed -i -e 's/Hermes Agent/Fireplace Agent/g' -e 's/Nous Research/Fireplace/g' || true
+COPY brand-patch.py /tmp/brand-patch.py
+RUN SITE="$(/opt/hermes/bin/python -c 'import hermes_cli,os;print(os.path.dirname(os.path.dirname(hermes_cli.__file__)))')" \
+ && /opt/hermes/bin/python /tmp/brand-patch.py "$SITE" || true
 
 # State + config live in the mounted volume.
 VOLUME ["/data"]
