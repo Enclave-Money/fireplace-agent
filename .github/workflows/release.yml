@@ -4,8 +4,7 @@ name: release
 # installer can `docker pull` it (fast) instead of every user building locally.
 on:
   push:
-    tags: ["v*"]
-  workflow_dispatch: {}   # allow manual rebuilds (e.g. to refresh the multi-arch image)
+    tags: ["v*"]   # tag-gated releases only
 
 jobs:
   image:
