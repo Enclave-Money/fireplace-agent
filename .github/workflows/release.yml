@@ -40,7 +40,8 @@ jobs:
           context: bundle/docker
           push: true
           platforms: linux/amd64,linux/arm64
-          provenance: false
+          provenance: mode=max   # SLSA provenance attestation (supply-chain integrity)
+          sbom: true
           tags: |
             ghcr.io/enclave-money/fireplace-agent:${{ steps.v.outputs.bundle }}
             ghcr.io/enclave-money/fireplace-agent:latest
