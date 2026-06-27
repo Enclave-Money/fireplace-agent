@@ -1,0 +1,11 @@
+# macOS / editor cruft
+.DS_Store
+*.swp
+*~
+
+# Brand-patch backups (created at install time under ~/.fireplace, never here —
+# listed defensively in case someone runs a patch inside the repo)
+*.fpbak
+
+# Local test sandboxes
+/tmp/

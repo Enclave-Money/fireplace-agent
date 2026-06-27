@@ -1,0 +1,121 @@
+# =============================================================================
+# Fireplace Agent — custom Hermes skin
+# =============================================================================
+# Renders the branded TUI surface. Dropped at $FH/skins/fireplace.yaml and
+# selected via config.yaml display.skin: fireplace.
+#
+# Hermes skin engine (hermes_cli/skin_engine.py): a custom skin inherits any
+# UNSET key from the built-in 'default' skin, so we only override what brands
+# Fireplace. Color values are hex strings; banner_logo is Rich-markup ASCII art.
+# Palette is a warm-orange set anchored on the Fireplace accent #FF6A3D.
+# =============================================================================
+
+name: fireplace
+description: Fireplace Agent — prediction-market trading & research desk (warm orange flame theme).
+
+# -----------------------------------------------------------------------------
+# Branding strings (override Hermes/Nous defaults)
+# -----------------------------------------------------------------------------
+branding:
+  agent_name: "Fireplace Agent"          # default would be 'Hermes Agent'
+  response_label: " 🔥 Fireplace "        # tag shown on agent responses
+  prompt_symbol: "❯"                      # input prompt glyph
+  welcome: "🔥 Fireplace Agent — your prediction-market desk. Read-only by default; run `fireplace enable-trading` to arm execution. What market are we looking at?"
+  goodbye: "Books closed. 🔥 Stay sharp — Fireplace out."
+  help_header: "🔥 Fireplace Agent — markets, research, positions & risk"
+
+# -----------------------------------------------------------------------------
+# Colors — warm orange palette anchored on #FF6A3D
+# -----------------------------------------------------------------------------
+colors:
+  # Banner / hero
+  banner_accent: "#FF6A3D"               # primary flame accent
+  banner_title: "#FF8A5B"                # brighter title text
+  banner_border: "#FF6A3D"               # banner frame
+  banner_dim: "#7A3520"                  # dim ember tone
+  banner_text: "#FFD9C7"                 # light warm body text
+  # UI chrome
+  ui_accent: "#FF6A3D"                   # primary UI accent
+  ui_label: "#FFB089"                    # labels / secondary headings
+  ui_ok: "#5FD08A"                       # success (kept green for readability)
+  ui_error: "#FF4D4D"                    # errors
+  ui_warn: "#FFB347"                     # warnings (amber)
+  # Prompt / input
+  prompt: "#FF6A3D"
+  input_rule: "#7A3520"
+  # Responses
+  response_border: "#FF8A5B"
+  # Session panel
+  session_label: "#FFB089"
+  session_border: "#FF6A3D"
+  # Status bar & completion menu
+  status_bar_bg: "#2A1208"
+  completion_menu_bg: "#2A1208"
+  completion_menu_current_bg: "#FF6A3D"
+
+# -----------------------------------------------------------------------------
+# Banner logo — big block wordmark (matches Hermes' built-in skins, which use
+# ansi_shadow block letters wrapped in Rich [bold #HEX]...[/] markup). Per-line
+# top->bottom amber->ember gradient anchored on the Fireplace accent #FF6A3D.
+# -----------------------------------------------------------------------------
+banner_logo: |
+  [bold #FFC24B]███████╗██╗██████╗ ███████╗██████╗ ██╗      █████╗  ██████╗███████╗[/]
+  [bold #FFAA3C]██╔════╝██║██╔══██╗██╔════╝██╔══██╗██║     ██╔══██╗██╔════╝██╔════╝[/]
+  [bold #FF8E2B]█████╗  ██║██████╔╝█████╗  ██████╔╝██║     ███████║██║     █████╗  [/]
+  [bold #FF7322]██╔══╝  ██║██╔══██╗██╔══╝  ██╔═══╝ ██║     ██╔══██║██║     ██╔══╝  [/]
+  [bold #FF5E1A]██║     ██║██║  ██║███████╗██║     ███████╗██║  ██║╚██████╗███████╗[/]
+  [bold #E8490C]╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝╚═╝  ╚═╝ ╚═════╝╚══════╝[/]
+
+# -----------------------------------------------------------------------------
+# Banner hero — Fireplace flame side-art (overrides the inherited Hermes
+# caduceus). Same warm gradient, top->bottom.
+# -----------------------------------------------------------------------------
+banner_hero: |
+  [#FFD27F]        ▟▙[/]
+  [#FFC24B]       ▟██▙[/]
+  [#FFB347]      ▟███▙[/]
+  [#FF9A3D]     ▟█████▙[/]
+  [#FF8A2B]    ▟███▛███▙[/]
+  [#FF7322]   ▟███▌ ▐███▙[/]
+  [#FF5E1A]   ▜███▙▄▟███▛[/]
+  [#FF4D1A]    ▜███████▛[/]
+  [#E8490C]     ▜█████▛[/]
+  [#D2400A]      ▀▀▀▀▀[/]
+
+# -----------------------------------------------------------------------------
+# Spinner — markets-themed thinking verbs
+# -----------------------------------------------------------------------------
+spinner:
+  thinking_verbs:
+    - "Scanning order books"
+    - "Pricing risk"
+    - "Reading the tape"
+    - "Sizing the position"
+    - "Checking open interest"
+    - "Tracking smart money"
+    - "Mapping the book"
+    - "Weighing the odds"
+    - "Pulling candles"
+    - "Gauging liquidity"
+    - "Crunching P&L"
+    - "Hunting catalysts"
+
+# -----------------------------------------------------------------------------
+# Tool call styling
+# -----------------------------------------------------------------------------
+tool_prefix: "🔥"                         # prefix glyph on tool-call lines
+
+# Optional per-tool emoji accents (inherits default for anything unlisted).
+tool_emojis:
+  search_markets: "🔎"
+  search_events: "🔎"
+  get_market_orderbook: "📖"
+  get_market_latest_candles: "📈"
+  get_market_historical_candles: "📈"
+  my_positions: "💼"
+  my_overview: "💼"
+  get_trader_historical_pnl: "💰"
+  get_smart_money_wallets: "🧠"
+  get_smart_money_trades: "🧠"
+  get_news: "📰"
+  get_news_events: "📰"

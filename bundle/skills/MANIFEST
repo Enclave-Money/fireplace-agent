@@ -1,0 +1,15 @@
+# Fireplace shipped skills manifest
+#
+# These are the read-only, installer-owned skills shipped with Fireplace Agent.
+# They use the reserved "fireplace-" directory prefix and are loaded via the
+# config key skills.external_dirs: [ ${HERMES_HOME}/fireplace-skills ].
+# The installer overwrites $FH/fireplace-skills wholesale on 'fireplace update';
+# agent/user-authored skills (no "fireplace-" prefix) in $FH/skills are never
+# touched. 'fireplace doctor' / update use this list to detect the shipped set.
+#
+# Format: <skill-dir-name> — <short description>
+
+fireplace-api — Read the Fireplace MCP read tools effectively (markets, events, orderbook, candles, trader/wallet/smart-money reads, news, leaderboard, my_* account reads, order status).
+fireplace-trading — Place, size, and reason about trades; orderbook-first, propose-and-confirm, gated execution tools (read-only by default).
+fireplace-portfolio — Review the logged-in user's portfolio: PnL, positions, open orders, historical PnL, unredeemed value, followed wallets; summarise exposure & concentration.
+fireplace-risk — Risk management: position sizing, orderbook depth (spread/walls/imbalance), concentration via open-interest/top-positions, stop orders, per-trade & portfolio limits.

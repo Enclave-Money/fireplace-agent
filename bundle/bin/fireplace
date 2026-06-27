@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# =============================================================================
+# fireplace — the branded CLI shim (installed to ~/.local/bin/fireplace)
+# -----------------------------------------------------------------------------
+# Responsibilities (kept lean so it stays fast on the hot path):
+#   1. Resolve the install root and EXPORT HERMES_HOME so Hermes AND every child
+#      it spawns stay isolated in ~/.fireplace/home, never touching ~/.hermes
+#      (footgun #18594).
+#   2. Source bundle/lib/common.sh for the runtime-aware launch helpers
+#      (agent_exec). The agent runs in a Docker container (default, sandboxed)
+#      or a native venv (fallback) — see ~/.fireplace/.runtime — but that is
+#      invisible to the user: `fireplace ...` behaves identically either way.
+#   3. Intercept the Fireplace lifecycle verbs BEFORE passthrough so e.g.
+#      `fireplace update` runs OUR updater (not `hermes update`); these
+#      intentionally shadow same-named hermes subcommands for a clean surface.
+#   4. First run (no $FH/.env) -> the onboarding wizard.
+#   5. Everything else -> the agent, with args passed through verbatim.
+#
+# `exec` is used on the hot paths so signals propagate to the replaced process.
+# =============================================================================
+set -euo pipefail
+
+FIREPLACE_ROOT="${FIREPLACE_ROOT:-$HOME/.fireplace}"
+FH="$FIREPLACE_ROOT/home"
+ENV_FILE="$FH/.env"
+BUNDLE="$FIREPLACE_ROOT/bundle"
+
+_fp_err() { printf '\033[31m[fireplace] ✗\033[0m %s\n' "$*" >&2; }
+
+# Isolation guarantee — set here too (not only in common.sh) so it holds even if
+# common.sh ever fails to load.
+export FIREPLACE_ROOT
+export HERMES_HOME="$FH"
+
+# Load the shared helpers (paths, logging, runtime launch). On a broken install
+# (bundle missing) fail with a clear, branded reinstall hint.
+if [ -r "$BUNDLE/lib/common.sh" ]; then
+  # shellcheck source=../lib/common.sh
+  . "$BUNDLE/lib/common.sh"
+else
+  _fp_err "Fireplace is not installed correctly (missing $BUNDLE/lib/common.sh)."
+  _fp_err "Reinstall:  curl -fsSL https://get.fireplace.gg/install.sh | bash"
+  exit 1
+fi
+
+# ----- intercept Fireplace lifecycle verbs (before any passthrough) ----------
+# Reachable even before onboarding so 'doctor'/'uninstall' work on a half setup.
+cmd="${1:-}"
+case "$cmd" in
+  help|--help|-h|commands|capabilities)
+                   shift; exec bash "$BUNDLE/lib/help.sh" "$@" ;;
+  update)          shift; exec bash "$BUNDLE/lib/update.sh" "$@" ;;
+  reset)           shift; exec bash "$BUNDLE/wizard.sh" --reset "$@" ;;
+  uninstall)       shift; exec bash "$BUNDLE/lib/uninstall.sh" "$@" ;;
+  doctor)          shift; exec bash "$BUNDLE/lib/doctor.sh" "$@" ;;
+  enable-trading)  shift; exec bash "$BUNDLE/lib/trading.sh" enable "$@" ;;
+  disable-trading) shift; exec bash "$BUNDLE/lib/trading.sh" disable "$@" ;;
+  gateway)
+    # Service control (start/stop/restart/logs/status) is managed; any other
+    # gateway subcommand (e.g. `gateway setup` pairing) runs interactively.
+    shift
+    sub="${1:-}"
+    case "$sub" in
+      ""|start|stop|restart|logs|status)
+        exec bash "$BUNDLE/lib/gateway.sh" "${sub:-start}" ;;
+      *)
+        [ -f "$ENV_FILE" ] || exec bash "$BUNDLE/wizard.sh"
+        agent_exec gateway "$@" ;;
+    esac
+    ;;
+esac
+
+# ----- first run: no secrets yet -> onboarding wizard ------------------------
+if [ ! -f "$ENV_FILE" ]; then
+  exec bash "$BUNDLE/wizard.sh"
+fi
+
+# ----- everything else -> the agent (Docker or native), args verbatim --------
+agent_exec "$@"

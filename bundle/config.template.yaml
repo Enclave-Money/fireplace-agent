@@ -1,0 +1,244 @@
+# =============================================================================
+# Fireplace Agent — config template
+# =============================================================================
+# Renders to $FH/config.yaml  (where $FH == ~/.fireplace/home == $HERMES_HOME).
+#
+# This file is consumed by the pinned Hermes harness (v2026.6.19 / dist 0.17.0).
+# Hermes deep-merges this YAML over its built-in DEFAULT_CONFIG and may rewrite
+# it in place (it is version-stamped via an internal `_config_version` and goes
+# through migrations on load). Because of that, the installer PRE-WRITES this
+# file and `fireplace doctor` RE-READS + diffs it to detect drift.
+#
+# SECRETS ARE NEVER BAKED IN. Every secret is a ${VAR} placeholder resolved at
+# runtime from $FH/.env (chmod 600):
+#   - config.py:_expand_env_vars expands ${VAR} in ordinary config strings.
+#   - mcp_tool.py:_interpolate_env_vars expands ${VAR} inside MCP headers.
+# An UNRESOLVED placeholder is left literal (e.g. the string "${FIREPLACE_API_KEY}")
+# which is a SILENT failure — `fireplace doctor` asserts each one resolves
+# non-empty.
+#
+# WHY pre-writing the model block matters (wizard suppression): Hermes' native
+# first-run wizard is computed live by _has_any_provider_configured(). One of the
+# branches that returns True is: config.yaml `model` is a dict AND any of
+# model.provider / model.base_url / model.api_key is a non-empty string. We
+# satisfy that here (provider: openrouter + a non-empty model.default), AND the
+# installer also writes a real OPENROUTER_API_KEY into $FH/.env. Do NOT set
+# provider: auto with an empty key — that satisfies neither branch and the native
+# wizard will re-appear.
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# MODEL — POSTURE A (default): BYO LLM key (OpenRouter / Anthropic / OpenAI)
+# -----------------------------------------------------------------------------
+# `model` is a mapping (Hermes also accepts a bare string, but the mapping form
+# is what suppresses the wizard). model.default MUST be non-empty and MUST differ
+# from Hermes' DEFAULT_CONFIG model (which is the empty string "").
+#
+# The four provider placeholders below are substituted by render_config()
+# (lib/common.sh) from the profile the wizard writes to $FH/.llm-provider. With NO profile
+# they default to OpenRouter (provider: openrouter, ${OPENROUTER_API_KEY},
+# anthropic/claude-sonnet-4.5). The wizard lets the user pick a provider instead:
+#   - openrouter -> provider: openrouter, ${OPENROUTER_API_KEY}, anthropic/claude-sonnet-4.5
+#   - anthropic  -> provider: anthropic,  ${ANTHROPIC_API_KEY},  claude-sonnet-4-5
+#   - openai     -> provider: openai,     ${OPENAI_API_KEY},     gpt-4.1
+# Provider ids + env vars are from Hermes' PROVIDER_REGISTRY (hermes_cli/auth.py).
+model:
+  default: @@FP_MODEL_DEFAULT@@          # primary agent model id (provider-specific slug)
+  provider: @@FP_PROVIDER@@             # non-empty -> suppresses Hermes' native wizard
+  api_key: ${@@FP_API_KEY_VAR@@}        # resolved from $FH/.env at runtime
+  # base_url:        # (unset — Hermes knows each registered provider's endpoint)
+  # context_length:  # leave to Hermes/provider defaults
+  # max_tokens:      # leave to Hermes/provider defaults
+
+# .............................................................................
+# MODEL — POSTURE B (hosted Fireplace LLM): commented-out alternative.
+# To flip postures, the ONLY change is the `model:` block below (plus shipping a
+# FIREPLACE_LLM_KEY in $FH/.env). Comment out POSTURE A above and uncomment this:
+#
+# model:
+#   default: anthropic/claude-sonnet-4.5   # logical model name routed by the gateway
+#   provider: custom                       # custom OpenAI-compatible endpoint
+#   base_url: https://llm.fireplace.gg/v1  # Fireplace-hosted LLM gateway
+#   api_key: ${FIREPLACE_LLM_KEY}          # tenant key for the hosted gateway
+#
+# (Auxiliary slots below also reference ${OPENROUTER_API_KEY}; under posture B,
+#  either repoint them at the hosted gateway the same way, or drop the explicit
+#  pins and let them fall back to provider: auto so they piggyback the main creds.)
+# .............................................................................
+
+
+# -----------------------------------------------------------------------------
+# AUXILIARY MODELS — per-task helper LLMs
+# -----------------------------------------------------------------------------
+# Each auxiliary slot is INDEPENDENT (there is no global aux-provider switch).
+# Slots default to provider: auto, which resolves against the MAIN agent's
+# provider/creds — acceptable and the default for everything we don't pin here.
+# We pin the two cheapest/highest-frequency slots to a cheap model so background
+# chatter (chat titles, approval triage) doesn't burn Sonnet tokens.
+auxiliary:
+  title_generation:                      # generates short session/chat titles
+    provider: @@FP_PROVIDER@@
+    model: @@FP_AUX_MODEL@@              # cheap + fast (provider's haiku/mini tier)
+    api_key: ${@@FP_API_KEY_VAR@@}
+  approval:                              # used only when approvals.mode == 'smart'
+    provider: @@FP_PROVIDER@@            # we run approvals.mode: manual, but pin anyway
+    model: @@FP_AUX_MODEL@@
+    api_key: ${@@FP_API_KEY_VAR@@}
+  # All other aux slots (vision, web_extract, compression, skills_hub, mcp,
+  # tts_audio_tags, triage_specifier, kanban_decomposer, profile_describer)
+  # are intentionally left to their default provider: auto (piggyback main creds).
+
+
+# -----------------------------------------------------------------------------
+# MCP SERVERS — the Fireplace data plane (read-only by construction)
+# -----------------------------------------------------------------------------
+# The single `fireplace` MCP server is this product's data source. The READ-ONLY
+# guarantee is enforced HERE, not just by approvals: tools.include is an explicit
+# allow-list of the 43 read tools. The 14 execution tools (place_*, edit_order,
+# cancel_*, redeem/merge/split_position, follow/unfollow_wallet) are simply NOT
+# listed, so Hermes never advertises them to the model and they cannot fire.
+# `fireplace enable-trading` appends those 14 names to tools.include; the real
+# guarantee is server-side key scoping (out of repo scope — see README).
+mcp_servers:
+  fireplace:
+    url: https://data.fireplace.gg/mcp                 # REAL Fireplace MCP endpoint
+    headers:
+      Authorization: "Bearer ${FIREPLACE_API_KEY}"     # interpolated by mcp_tool.py
+    timeout: 120              # per-tool-call timeout (seconds)
+    connect_timeout: 60       # connection establishment timeout (seconds)
+    keepalive_interval: 180   # liveness ping interval (seconds; floor 5)
+    tools:
+      # ----- READ-ONLY allow-list (43 tools) -----------------------------------
+      # An explicit, non-empty include list = ONLY these tools are exposed.
+      # (Source of truth: result.mcp.read_tools in the research brief.)
+      include:
+        # Markets
+        - get_market_overview
+        - get_market_by_id
+        - get_market_orderbook
+        - get_market_orderbook_snapshots
+        - get_market_historical_candles
+        - get_market_latest_candles
+        - get_market_open_interest
+        - get_market_recent_trades
+        - get_market_top_positions
+        # Events
+        - get_event_by_id
+        - get_event_open_interest
+        # Search
+        - search_markets
+        - search_events
+        - search_wallets
+        # Traders
+        - get_trader_overview
+        - get_trader_positions
+        - get_trader_unredeemed_positions
+        - get_trader_recent_trades
+        - get_trader_activity
+        - get_trader_historical_pnl
+        # Wallets
+        - get_wallet_trades
+        - get_wallet_market_trades
+        - get_wallet_net_flows
+        # Smart money
+        - get_smart_money_wallets
+        - get_smart_money_trades
+        # Me / my account
+        - my_overview
+        - my_positions
+        - my_recent_trades
+        - my_followed_wallets
+        - followed_wallets_recent_trades
+        - followed_wallets_net_flows
+        # Orders (read views)
+        - get_open_orders
+        - get_order_status
+        - get_order_fills
+        - get_order_audit
+        - get_recent_trades_order_view
+        # Leaderboard
+        - get_leaderboard_categories
+        - get_leaderboard_user
+        # News
+        - get_news
+        - get_news_events
+        - get_news_event_stories
+        - get_news_cluster
+        # Disputes
+        - get_dispute_stats
+      # ----- Execution tools (14) — deliberately NOT included ------------------
+      # Managed exclusively by `fireplace enable-trading` / `disable-trading`,
+      # which rewrite the include list above. Do NOT add them by hand:
+      #   place_limit_order, place_market_order, place_stop_limit,
+      #   place_stop_market, place_iceberg, place_sticky_bbo, edit_order,
+      #   cancel_order, cancel_all_orders, redeem_positions, merge_positions,
+      #   split_position, follow_wallet, unfollow_wallet
+
+
+# -----------------------------------------------------------------------------
+# APPROVALS — defense-in-depth command gating
+# -----------------------------------------------------------------------------
+# NOTE: approvals do NOT gate MCP tool calls. Confirmed in hermes 0.17.0
+# (tools/mcp_tool.py:3110-3249): the outbound MCP dispatch path calls
+# server.session.call_tool with NO approval check — the approval engine only
+# intercepts dangerous SHELL commands (terminal_tool / code_execution). The hard
+# read-only boundary is therefore the tools.include allow-list above (and
+# server-side key scoping). approvals.mode is kept at 'manual' (never
+# 'off'/--yolo) purely as a backstop for shell-command gating.
+approvals:
+  mode: manual        # always prompt before dangerous/terminal commands
+  timeout: 60         # seconds to wait on an approval prompt
+  cron_mode: deny     # unattended cron jobs never auto-run dangerous commands
+
+
+# -----------------------------------------------------------------------------
+# COMMAND ALLOWLIST — permanently pre-approved shell command patterns
+# -----------------------------------------------------------------------------
+# Empty by design: nothing is silently pre-approved. (Grows only via an explicit
+# 'always' approval choice by the user at runtime.)
+command_allowlist: []
+
+
+# -----------------------------------------------------------------------------
+# DISABLED TOOLSETS — globally turn off whole toolset families
+# -----------------------------------------------------------------------------
+# We disable `browser` (headless browsing) and `image_gen` (image generation) —
+# both irrelevant to a markets agent and a needless attack/cost surface. We KEEP
+# web/search (web_search), messaging (telegram), and skills.
+# The real toolset key is `image_gen` (toolsets.py:126) — NOT the longer
+# "image_gen"+"eration" spelling, which Hermes does not recognize.
+#
+# CONFIRMED KEY PATH (hermes 0.17.0, tools_config.py:1532-1536): the global
+# disable list is `agent.disabled_toolsets` — NESTED under a top-level `agent:`
+# mapping, NOT a bare top-level `disabled_toolsets:` (which tools_config never
+# reads) and NOT `platform_toolsets` (a SEPARATE per-platform ENABLE-list).
+# `agent.disabled_toolsets` is applied LAST (subtractive) and overrides
+# platform_toolsets, so it is the correct global blocklist.
+agent:
+  disabled_toolsets:
+    - browser
+    - image_gen
+
+
+# -----------------------------------------------------------------------------
+# SKILLS — shipped Fireplace skills as read-only external dirs
+# -----------------------------------------------------------------------------
+# Shipped skills live in an immutable external root that Hermes' per-launch
+# sync_skills() never re-seeds or overwrites. The installer owns this dir and
+# rewrites it wholesale on `fireplace update`. Agent/user-authored skills live in
+# the normal $FH/skills/ (no 'fireplace-' prefix) and are never clobbered.
+# (A $FH/.no-bundled-skills marker, written by the installer, stops Hermes from
+#  re-seeding its own bundled skills on launch.)
+skills:
+  external_dirs:
+    - ${HERMES_HOME}/fireplace-skills    # immutable shipped-skills root
+
+
+# -----------------------------------------------------------------------------
+# DISPLAY — branded skin selection
+# -----------------------------------------------------------------------------
+# Selects $FH/skins/fireplace.yaml (custom skin inherits unset keys from the
+# built-in 'default' skin).
+display:
+  skin: fireplace

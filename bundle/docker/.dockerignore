@@ -1,0 +1,4 @@
+# The image needs nothing from the build context except the Dockerfile itself
+# (Hermes comes from pip; Fireplace config/state come from the mounted volume).
+*
+!Dockerfile
