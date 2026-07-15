@@ -83,6 +83,36 @@ PnL → concentration/skew flags → working orders → unredeemed value → sug
 follow-ups (never act without going through **fireplace-trading**'s confirm
 gate).
 
+## Track record — skill vs luck (the analytical core)
+
+Judge a record by sample size and dispersion, not the headline number.
+`get_trader_historical_pnl` / `get_trader_overview` give realized vs unrealized
+PnL and whatever ROI / win aggregates the tool returns, by category where
+available.
+
+- **HARD RULE: report ONLY numbers the tools return.** Never compute or estimate
+  a stat the tools don't already provide; if a metric isn't available, say so
+  rather than inventing it. A wrong win-rate is worse than no win-rate.
+- Call out when PnL is **concentrated in one or two bets**, or the sample is too
+  small to mean anything. Do not crown a great trader off a handful of trades.
+- Read **category-specific** performance where the tool exposes it — a strong
+  overall record can hide a category the trader consistently loses in.
+
+## Analyzing any trader (not just yourself)
+
+The same method works on any wallet via the `get_trader_*` tools (needs a 0x
+`trader_address`); use `my_*` only for the logged-in user.
+
+- **Dead capital** (`get_trader_unredeemed_positions`): settled-but-unclaimed
+  winnings plus dust / near-worthless positions. Flag as recoverable cash
+  (redeeming is gasless). A winner can read as redeemable until it is actually
+  claimed.
+- **Style** (`get_trader_recent_trades`): momentum vs contrarian, hold-to-
+  resolution vs flip, sizing discipline, category focus, early vs late entries →
+  describe an archetype, hedged as inference from public on-chain data.
+- For another trader, frame everything as observed/inferred, not certain; for the
+  user, end with concrete next steps (e.g. trim X, harvest Y).
+
 ## Pitfalls
 
 - **Snapshot ≠ trend.** Pair `my_overview`/`my_positions` with

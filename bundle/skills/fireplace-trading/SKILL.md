@@ -27,6 +27,8 @@ metadata:
       - fireplace-api
       - fireplace-risk
       - fireplace-portfolio
+      - fireplace-thesis
+      - fireplace-premortem
 ---
 
 # Fireplace Trading — placing orders safely
@@ -80,6 +82,36 @@ reviewing the resulting book use **fireplace-portfolio**.
    re-propose and wait again.
 6. **Confirm the result.** Report the fill/working state; verify with
    `get_order_status` / `get_open_orders` / `my_positions`.
+
+## Choosing the order type (do NOT default to a plain limit)
+
+Match the order type to the trader's use case. Always `get_market_orderbook`
+first; the right type depends on size vs visible depth and the trader's intent.
+Infer the goal (ask only if genuinely unclear), then choose:
+
+- **MARKET** (`place_market_order`): must fill NOW, size small vs the book,
+  willing to pay the spread. Urgent entry/exit on liquid markets.
+- **LIMIT** (`place_limit_order`): price-sensitive, willing to wait; rest at/
+  inside a level. Maker (no taker fee). Good for a single patient entry — one
+  option, not the default.
+- **ICEBERG** (`place_iceberg`): size is LARGE vs visible depth. Shows only a
+  slice at a time so it doesn't move the book or signal intent; refills as it
+  fills. Use when a plain limit would post an obvious wall.
+- **STICKY-BBO** (`place_sticky_bbo`): wants to stay at the best bid/ask as the
+  book moves — passive accumulation/exit that tracks the market and keeps maker
+  priority without manual re-pricing. Use for patient build-ups where staying
+  top-of-book matters.
+- **STOP-MARKET** (`place_stop_market`): risk management / breakout — fire a
+  market order when price crosses a trigger. Caps downside or enters on momentum
+  when the trader can't watch; prioritizes certainty of fill.
+- **STOP-LIMIT** (`place_stop_limit`): same trigger but caps the fill price
+  (avoids slippage on the trigger), at the risk of not filling in a fast move.
+
+Decision shortcuts: urgent + small → market; patient + price set → limit; big
+size → iceberg; stay top-of-book over time → sticky-BBO; protect/breakout → stop
+(market if fill certainty matters, limit if price control matters). Set limit
+prices and stop triggers from the actual book and recent candles, never round
+numbers. Always state WHY you chose that type for their use case.
 
 ## Order types & parameters
 
