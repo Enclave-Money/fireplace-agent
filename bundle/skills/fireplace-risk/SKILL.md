@@ -26,6 +26,8 @@ metadata:
       - fireplace-trading
       - fireplace-portfolio
       - fireplace-api
+      - fireplace-thesis
+      - fireplace-premortem
 ---
 
 # Fireplace Risk — sizing, liquidity, and limits
@@ -38,6 +40,27 @@ market's) exposure is, and to set or reason about stop orders. **fireplace-
 trading** must consult these rules before proposing any order;
 **fireplace-portfolio** hands its exposure figures here to be judged against
 limits; raw tool/param details live in **fireplace-api**.
+
+## Pre-trade checklist (run before proposing or confirming any order)
+
+Call `get_market_orderbook` first, then walk every item — this is the fast gate
+before a trade goes to **fireplace-trading**:
+
+- **LIQUIDITY vs SIZE** — can the book absorb the intended size without large
+  slippage? Size to visible depth.
+- **SPREAD & IMPACT** — how much edge does crossing the spread eat? This is the
+  real cost, not gas (trading is gasless). On thin / sub-5c markets it dominates.
+- **RESOLUTION RISK** — how clear are the criteria (read the market description),
+  how far to resolution, and any active/likely dispute (`get_dispute_stats` on
+  the proposer/disputer health).
+- **CONCENTRATION** — does this stack onto existing exposure in the same market /
+  category / outcome (`my_positions`)? Flag correlation.
+- **AFFORDABILITY** — does it fit spendable cash? If not → rotate (trim weak
+  holdings) or deposit (see SOUL "Position sizing").
+- **MAX LOSS** — state the worst case plainly: a BUY can go to $0 at resolution.
+
+If any check fails materially, say so and adjust size or entry rather than
+pushing the trade through.
 
 ## Risk limits to establish (ask the user, then enforce)
 

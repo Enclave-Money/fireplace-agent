@@ -10,6 +10,11 @@
 # Format: <skill-dir-name> — <short description>
 
 fireplace-api — Read the Fireplace MCP read tools effectively (markets, events, orderbook, candles, trader/wallet/smart-money reads, news, leaderboard, my_* account reads, order status).
-fireplace-trading — Place, size, and reason about trades; orderbook-first, propose-and-confirm, gated execution tools (read-only by default).
-fireplace-portfolio — Review the logged-in user's portfolio: PnL, positions, open orders, historical PnL, unredeemed value, followed wallets; summarise exposure & concentration.
-fireplace-risk — Risk management: position sizing, orderbook depth (spread/walls/imbalance), concentration via open-interest/top-positions, stop orders, per-trade & portfolio limits.
+fireplace-discover — Find markets worth betting on: mispricing/fish, smart-money accumulation, trending, catalyst, structural, personalized — each validated for tradeable liquidity, then ranked.
+fireplace-research — Deep-dive one market into a thesis: resolution first, price & flow, holders both sides, news, term structure, synthesize a numeric fair value.
+fireplace-news — Judge whether a news item actually moves a market, read against its exact resolution criteria; combines the Fireplace news layer with web_search.
+fireplace-thesis — Turn research into a structured, falsifiable trade thesis (fair value, levels, mechanism, evidence, falsifier, manual-Kelly size).
+fireplace-trading — Place, size, and reason about trades; orderbook-first, order-type selection, propose-and-confirm, gated execution tools (read-only by default).
+fireplace-portfolio — Review the logged-in user's (or any trader's) portfolio: PnL, positions, open orders, historical PnL, unredeemed value, followed wallets; exposure, concentration, and a skill-vs-luck track-record read.
+fireplace-risk — Risk management: pre-trade checklist, position sizing, orderbook depth (spread/walls/imbalance), concentration via open-interest/top-positions, stop orders, per-trade & portfolio limits.
+fireplace-premortem — Red-team your own conclusion before committing to a money-moving recommendation; present the counter-case alongside the trade.
