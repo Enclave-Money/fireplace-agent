@@ -36,7 +36,7 @@ FIREPLACE_ROOT="${FIREPLACE_ROOT:-$HOME/.fireplace}"
 FIREPLACE_REPO="${FIREPLACE_REPO:-https://github.com/Enclave-Money/fireplace-agent}"
 # Git ref of THIS repo to fetch in the curl|bash path. Defaults to the bundle
 # release tag, then falls back to the default branch if that tag is absent.
-FIREPLACE_REF="${FIREPLACE_REF:-v0.1.2}"
+FIREPLACE_REF="${FIREPLACE_REF:-v0.1.3}"
 PIP_TIMEOUT="${PIP_TIMEOUT:-600}"   # seconds; the engine[all] is a large install
 # Runtime: 'auto' (default) prefers Docker for a sandboxed agent and falls back
 # to a native venv when Docker is unavailable. Force with 'docker' or 'native'.
