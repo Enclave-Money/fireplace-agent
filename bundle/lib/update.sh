@@ -28,7 +28,7 @@ for arg in "$@"; do
   case "$arg" in --local) FORCE_LOCAL=1 ;; *) ;; esac
 done
 
-FIREPLACE_REPO="${FIREPLACE_REPO:-https://github.com/fireplace-gg/fireplace-agent}"
+FIREPLACE_REPO="${FIREPLACE_REPO:-https://github.com/Enclave-Money/fireplace-agent}"
 FIREPLACE_REF="${FIREPLACE_REF:-v$BUNDLE_VERSION}"
 
 print_banner
